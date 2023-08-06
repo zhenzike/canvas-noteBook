@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <canvas class="canvasBox" width="800" height="800"></canvas>
+</body>
+<script>
+    let box = document.querySelector('.canvasBox')
+    if (box.getContext) {
+        let boxCanvas = box.getContext('2d')
+
+
+        boxCanvas.beginPath()
+        boxCanvas.arc(100, 100, 99, 0, 2 * Math.PI, false)
+        boxCanvas.moveTo(194, 100)
+        boxCanvas.arc(100, 100, 94, 0, 2 * Math.PI, false)
+        boxCanvas.moveTo(100, 100)
+        boxCanvas.stroke()
+
+        let dateArr2 = getTickCoordinates(100, 100, 94, -1 * Math.PI / 2, 60)
+        dateArr2.forEach((k, i) => {
+            boxCanvas.save();  // 保存当前画布状态
+            const angle = Math.atan2(k.y - 100, k.x - 100);  // 计算刻度位置与圆心连线的角度
+            boxCanvas.translate(k.x, k.y);  // 平移画布原点至刻度位置
+            boxCanvas.rotate(angle + Math.PI);  // 旋转角度使得数字中心与圆心连线垂直,因为是延垂直方向旋转，所以要加上90°
+            boxCanvas.fillText(`_`, 0, -2);  // 绘制文本
+            boxCanvas.restore();  // 恢复画布状态，取消旋转
+        })
+
+        boxCanvas.textAlign = 'center'
+        let dateArr = getTickCoordinates(100, 100, 79, -4 * Math.PI / 12, 12)
+        dateArr.forEach((k, i) => {
+            boxCanvas.save();  // 保存当前画布状态
+            const angle = Math.atan2(k.y - 100, k.x - 100);  // 计算刻度位置与圆心连线的角度
+            boxCanvas.translate(k.x, k.y);  // 平移画布原点至刻度位置
+            boxCanvas.rotate(angle + Math.PI / 2);  // 旋转角度使得数字中心与圆心连线垂直,因为是延垂直方向旋转，所以要加上90°
+
+            boxCanvas.fillText(`${i + 1}`, 0, 0);  // 绘制文本
+            boxCanvas.restore();  // 恢复画布状态，取消旋转
+        })
+
+
+
+        let newTime=new Date()
+      
+        let secondTime = newTime.getSeconds()
+        let minuteTime = newTime.getMinutes()
+        let hourTime = newTime.getHours()
+        let dateArr3 = getTickCoordinates(100, 100, 94, -1 * Math.PI / 2, 12)
+        let canvasState = boxCanvas.getImageData(0, 0, box.width, box.height);  // 保存当前画布状态
+        setInterval(() => {
+            if (secondTime > 59) {
+                secondTime = 0
+                minuteTime++
+            }
+
+            if (minuteTime > 59) {
+                minuteTime = 0
+                hourTime++
+            }
+
+            if(hourTime>11){
+                hourTime=0
+            }
+
+            boxCanvas.clearRect(0, 0, box.width, box.height); // 清除整个画布
+            if (canvasState) {
+                boxCanvas.putImageData(canvasState, 0, 0);
+            }
+
+            boxCanvas.beginPath()
+            boxCanvas.moveTo(100, 100)
+            let endPoint = timeUpdate(dateArr2[secondTime], 75)
+            boxCanvas.lineTo(endPoint.x, endPoint.y)    //绘制秒针
+            boxCanvas.moveTo(100, 100)
+          
+            let minuteEndPoint = timeUpdate(dateArr2[minuteTime], 55)
+            boxCanvas.lineTo(minuteEndPoint.x, minuteEndPoint.y)    //绘制分针
+            boxCanvas.moveTo(100, 100)
+            let hourEndPoint = timeUpdate(dateArr3[hourTime], 35)
+            boxCanvas.lineTo(hourEndPoint.x, hourEndPoint.y)    //绘制秒针
+            boxCanvas.stroke()
+
+
+
+            secondTime++
+        }, 1000);
+
+
+
+    }
+
+    function timeUpdate(knownPoint, lineLength) {
+        // const knownPoint = { x: 150, y: 200 };
+        const origin = { x: 100, y: 100 };
+
+        // 计算已知坐标与原点之间的距离
+        const horizontalDistance = knownPoint.x - origin.x;
+        const verticalDistance = knownPoint.y - origin.y;
+
+        // 计算已知坐标与原点之间的直线距离
+        const distance = Math.sqrt(Math.pow(horizontalDistance, 2) + Math.pow(verticalDistance, 2));
+
+        // 设定直线长度
+        // const lineLength = 75;
+
+        // 计算缩放因子
+        const scale = lineLength / distance;
+
+        // 计算缩放后的水平距离和垂直距离
+        const scaledHorizontalDistance = horizontalDistance * scale;
+        const scaledVerticalDistance = verticalDistance * scale;
+
+        // 计算终点坐标
+        const endPoint = {
+            x: origin.x + scaledHorizontalDistance,
+            y: origin.y + scaledVerticalDistance
+        };
+
+
+        return endPoint
+    }
+
+
+
+
+    function getTickCoordinates(cx, cy, radius, startAngle, add) {    //获取每个刻度的x，y坐标
+        const tickCoordinates = [];
+        const angleIncrement = 2 * Math.PI / add; // 每个刻度之间的角度增量
+
+        for (let i = 0; i < add; i++) {
+            const angle = startAngle + i * angleIncrement;
+            const x = cx + radius * Math.cos(angle);
+            const y = cy + radius * Math.sin(angle);
+            tickCoordinates.push({ x, y });
+        }
+
+        return tickCoordinates;
+    }
+</script>
+
+</html>
